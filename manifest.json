@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "omagotchi.pet",
+  "name": "Omagotchi",
+  "version": "0.1.0",
+  "author": "Omagotchi",
+  "description": "A tiny Wall-E-like robot pet. Eyes watch from the bar; click for the full bot.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omagotchi",
+    "description": "Pixel robot pet — eyes in the bar, body in a popup",
+    "category": "Fun",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
