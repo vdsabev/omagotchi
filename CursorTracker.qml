@@ -1,24 +1,44 @@
 import QtQuick
 import Quickshell.Io
 
-// Polls Hyprland for the global cursor so the eyes can look at you.
-// Falls back to idle wandering if hyprctl is missing or the cursor is still.
+// Polls Hyprland for the global cursor. Eyes glance for 5–10s, then
+// settle for 5–10 min. Between glances they wander.
 Item {
   id: root
 
   property real lookX: 0
   property real lookY: 0
   property real lastMoveMs: Date.now()
+  property real lastGlanceMs: 0
+  property bool tracking: false
+  property real trackUntilMs: 0
+  property real nextTrackMs: Date.now()
   property int cursorX: 0
   property int cursorY: 0
   property int widgetX: 0
   property int widgetY: 0
   property int widgetW: 28
   property int widgetH: 16
-  property bool idleWander: false
+  property bool idleWander: true
 
   property real wanderX: 0
   property real wanderY: 0
+
+  function burstMs() {
+    return 5000 + Math.random() * 5000
+  }
+
+  function cooldownMs() {
+    return 300000 + Math.random() * 300000
+  }
+
+  function settle() {
+    tracking = false
+    idleWander = true
+    lookX = wanderX
+    lookY = wanderY
+    nextTrackMs = Date.now() + cooldownMs()
+  }
 
   function setAnchor(item) {
     if (!item)
@@ -31,19 +51,33 @@ Item {
   }
 
   function applyCursor(x, y) {
-    if (x !== cursorX || y !== cursorY) {
-      lastMoveMs = Date.now()
-      idleWander = false
-    }
+    var now = Date.now()
+    var moved = x !== cursorX || y !== cursorY
+    if (moved)
+      lastMoveMs = now
     cursorX = x
     cursorY = y
 
-    if (Date.now() - lastMoveMs > 8000) {
-      idleWander = true
-      lookX = wanderX
-      lookY = wanderY
+    if (tracking && now >= trackUntilMs) {
+      settle()
       return
     }
+
+    if (!tracking) {
+      if (moved && now >= nextTrackMs) {
+        tracking = true
+        idleWander = false
+        trackUntilMs = now + burstMs()
+      } else {
+        idleWander = true
+        lookX = wanderX
+        lookY = wanderY
+        return
+      }
+    }
+
+    if (moved)
+      lastGlanceMs = now
 
     var cx = widgetX + widgetW / 2
     var cy = widgetY + widgetH / 2
@@ -55,14 +89,13 @@ Item {
       lookY = 0
       return
     }
-    // Normalize into a soft look range; nearby motion is more intense.
     var scale = Math.min(1, mag / 420)
     lookX = Math.max(-1, Math.min(1, (dx / mag) * scale))
     lookY = Math.max(-1, Math.min(1, (dy / mag) * scale))
   }
 
   Timer {
-    interval: 90
+    interval: root.tracking ? 90 : 400
     running: true
     repeat: true
     onTriggered: {

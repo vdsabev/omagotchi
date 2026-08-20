@@ -8,15 +8,15 @@ var moods = {
   night: { line: "Night shift. I'll keep watch." }
 }
 
-function moodFor(nowMs, lastMoveMs, lastClickMs, hour) {
+function moodFor(nowMs, lastMoveMs, lastClickMs, hour, lastGlanceMs) {
   if (lastClickMs > 0 && nowMs - lastClickMs < 8000)
     return "happy"
-  if (hour >= 23 || hour < 6)
+  if (hour < 7 || 22 <= hour)
     return "night"
   var idle = nowMs - lastMoveMs
   if (idle > 45000)
     return "sleepy"
-  if (idle < 400)
+  if (lastGlanceMs > 0 && nowMs - lastGlanceMs < 400)
     return "curious"
   return "watching"
 }
@@ -29,6 +29,6 @@ function defaultState() {
   return {
     hatched: new Date().toISOString(),
     lastClick: 0,
-    nickname: "W-E"
+    nickname: "Omagotchi"
   }
 }

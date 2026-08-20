@@ -62,7 +62,7 @@ BarWidget {
 
   function tickMood() {
     var hour = new Date().getHours()
-    root.mood = PetState.moodFor(Date.now(), tracker.lastMoveMs, root.lastClickMs, hour)
+    root.mood = PetState.moodFor(Date.now(), tracker.lastMoveMs, root.lastClickMs, hour, tracker.lastGlanceMs)
     injectPanel()
   }
 
