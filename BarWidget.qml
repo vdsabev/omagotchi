@@ -74,7 +74,7 @@ Panel {
   }
 
   Timer {
-    interval: 120
+    interval: 200
     running: true
     repeat: true
     onTriggered: {
@@ -84,25 +84,27 @@ Panel {
   }
 
   Timer {
-    interval: 3200
+    interval: 4000
     running: true
     repeat: true
     onTriggered: {
-      interval = 2200 + Math.random() * 4000
+      interval = 2000 + Math.random() * 6000
       root.blink = true
+      if (root.opened && Math.random() < 0.3)
+        soundEngine.play("whir")
       blinkOff.start()
     }
   }
 
   Timer {
     id: noticeTimer
-    interval: 6000
+    interval: 8000
     onTriggered: root.notice = ""
   }
 
   Timer {
     id: blinkOff
-    interval: 130
+    interval: 200
     onTriggered: root.blink = false
   }
 
@@ -138,7 +140,10 @@ Panel {
     }
   }
 
-  onOpenedChanged: if (root.opened) pluginList.running = true
+  onOpenedChanged: if (root.opened) {
+    pluginList.running = true
+    soundEngine.play("beep")
+  }
 
   Process {
     id: ensureDir
@@ -184,6 +189,10 @@ Panel {
     }
   }
 
+  SoundEngine {
+    id: soundEngine
+  }
+
   PetPanel {
     id: panel
     anchorItem: hit
@@ -194,7 +203,6 @@ Panel {
     contentWidth: Style.space(280)
     contentHeight: stage.implicitHeight + Style.space(40)
     onCloseRequested: root.close()
-
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent

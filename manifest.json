@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "id": "vdsabev.omagotchi",
   "name": "Omagotchi",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "vdsabev",
-  "description": "A tiny Wall-E-like robot pet. Eyes watch from the bar; click for the full bot.",
+  "description": "A cute tiny robot that sits in your Omarchy bar and keeps you company while you work.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
     "displayName": "Omagotchi",
-    "description": "Pixel robot pet — eyes in the bar, body in a popup",
+    "description": "A cute tiny robot that sits in your Omarchy bar and keeps you company while you work. Click to interact and open games.",
     "category": "Fun",
     "allowMultiple": false,
     "defaultSection": "right"

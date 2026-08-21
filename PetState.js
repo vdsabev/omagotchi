@@ -4,22 +4,22 @@ var DEFAULT_NICKNAME = "Omagotchi"
 var MAX_NICKNAME = 24
 
 var moods = {
-  idle: { line: "Watching you work.", named: "{name} is watching you work.", icon: "\u{1F916}" },
-  curious: { line: "Something moved. Interesting.", named: "Something moved. {name} noticed.", icon: "\u{1F440}" },
-  sleepy: { line: "Idle circuits cooling down.", named: "{name} is cooling down.", icon: "\u{1F634}" },
-  happy: { line: "You clicked. That was nice.", named: "{name} liked that click.", icon: "\u{1F60A}" },
-  night: { line: "Night shift. I'll keep watch.", named: "{name} has the night shift.", icon: "\u{1F319}" }
+  idle: { line: "Watching you work…", named: "{name} is watching you work", icon: "\u{1F916}" },
+  curious: { line: "Something moved - curious…", named: "Something moved - {name} noticed", icon: "\u{1F440}" },
+  sleepy: { line: "Idle circuits cooling down…", named: "{name} is cooling down", icon: "\u{1F634}" },
+  happy: { line: "You clicked - that was nice ☺️", named: "{name} enjoyed that click", icon: "\u{1F60A}" },
+  night: { line: "Night shift - I'll keep watch!", named: "{name} has the night shift", icon: "\u{1F319}" }
 }
 
 function moodFor(nowMs, lastMoveMs, lastClickMs, hour, lastGlanceMs) {
   if (hour < 7 || 22 <= hour)
     return "night"
   var idle = nowMs - lastMoveMs
-  if (idle > 45000)
+  if (idle > 60000)
     return "sleepy"
   // A click wins for a moment, then the glance takes over: the cursor moves
   // right after a click, and otherwise happy would never be seen.
-  if (lastClickMs > 0 && nowMs - lastClickMs < 600)
+  if (lastClickMs > 0 && nowMs - lastClickMs < 1000)
     return "happy"
   // Matches CursorTracker holdMs.
   if (lastGlanceMs > 0 && nowMs - lastGlanceMs < 5000)

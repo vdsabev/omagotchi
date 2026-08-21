@@ -24,13 +24,13 @@ test("night wins over everything", () => {
 })
 
 test("a long still cursor sleeps", () => {
-  assert.equal(mood({ lastMove: NOW - 45001 }), "sleepy")
-  assert.equal(mood({ lastMove: NOW - 44999 }), "idle")
+  assert.equal(mood({ lastMove: NOW - 60001 }), "sleepy")
+  assert.equal(mood({ lastMove: NOW - 59999 }), "idle")
 })
 
 test("a click shows happy briefly, then the glance takes over", () => {
   assert.equal(mood({ lastClick: NOW - 100, lastGlance: NOW }), "happy")
-  assert.equal(mood({ lastClick: NOW - 600, lastGlance: NOW }), "curious")
+  assert.equal(mood({ lastClick: NOW - 1001, lastGlance: NOW }), "curious")
 })
 
 test("curious lasts as long as CursorTracker holds the look", () => {

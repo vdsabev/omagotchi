@@ -2,7 +2,7 @@
 
 A cute tiny robot that sits in your [Omarchy](https://github.com/basecamp/omarchy) bar and keeps you company while you work.
 
-![Omagotchi preview](screenshot.png)
+![Omagotchi preview](preview.png)
 
 ## Install
 
@@ -43,6 +43,7 @@ omarchy plugin remove vdsabev.omagotchi
 	- `sleepy` (idle)
 	- `night` (22:00–07:00)
 	- `happy` (you clicked)
+- Sound effects: beep on popup open, whir on blink.
 - State: `~/.config/omagotchi/state.json` (nickname, last click).
 
 ## File structure
@@ -60,13 +61,12 @@ omarchy plugin remove vdsabev.omagotchi
 - `PetState.test.mjs` - mood tests
 - `PetPanel.qml` - persistent popup window
 - `Robot.qml` - full body
+- `SoundEngine.qml` - sound effect playback
+- `bin/beep.sh` - beep sound script
+- `bin/whir.sh` - whir sound script
 
 Tests run with `npm test`.
 
 ## License
 
 [MIT](LICENSE)
-
-## Later
-
-See [TODO.md](TODO.md).
