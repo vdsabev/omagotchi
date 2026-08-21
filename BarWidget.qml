@@ -13,8 +13,8 @@ import "Games.js" as Games
 // instance's PanelController can show a popup.
 Panel {
   id: root
-  moduleName: "omagotchi.pet"
-  ipcTarget: "omagotchi.pet"
+  moduleName: "vdsabev.omagotchi"
+  ipcTarget: "vdsabev.omagotchi"
 
   property bool blink: false
   property real lastClickMs: 0

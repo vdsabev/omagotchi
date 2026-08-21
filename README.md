@@ -2,21 +2,39 @@
 
 A cute robot that sits in your [Omarchy](https://github.com/basecamp/omarchy) bar and keeps you company while you work.
 
+![Omagotchi preview](screenshot.png)
+
 ## Install
 
 ```bash
 omarchy plugin add git@github.com:vdsabev/omagotchi.git --enable --yes
-omarchy plugin enable omagotchi.pet --section right
+omarchy plugin enable vdsabev.omagotchi --section right
 ```
 
-Or clone the repo at `~/.config/omarchy/plugins/omagotchi.pet/` and run:
+Or clone the repo at `~/.config/omarchy/plugins/vdsabev.omagotchi/` and run:
 
 ```bash
 omarchy-shell shell rescanPlugins
-omarchy plugin enable omagotchi.pet
+omarchy plugin enable vdsabev.omagotchi
 ```
 
-Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
+## Remove
+
+```bash
+omarchy plugin disable vdsabev.omagotchi
+omarchy plugin remove vdsabev.omagotchi
+```
+
+## Dependencies
+
+- Omarchy Quattro (`omarchy-shell` / Quickshell)
+- Hyprland socket — `cursorpos` is used to track the cursor for pupil direction
+- `$TERMINAL` — required to launch TUI games (e.g. Omasweeper, Quattrolitaire)
+- Uninstalled games are offered via a one-time `omarchy plugin add` confirmation in the popup
+
+## State
+
+The plugin writes nickname and last-click state to `~/.config/omagotchi/state.json`.
 
 ## Features
 
@@ -48,6 +66,10 @@ Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
 - `Robot.qml` - full body
 
 Tests run with `npm test`.
+
+## License
+
+[MIT](LICENSE)
 
 ## Later
 
