@@ -261,7 +261,7 @@ Panel {
           lookY: tracker.lookY
           blink: root.blink
           alert: tracker.tracking
-          sleepy: root.mood === "sleepy" || root.mood === "night"
+          sleepy: (root.mood === "sleepy" || root.mood === "night") && !tracker.tracking
           mood: root.mood
           accent: root.themeAccent
           yellow: root.themeFg
