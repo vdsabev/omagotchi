@@ -8,6 +8,8 @@ Item {
   property real lookY: 0
   property bool blink: false
   property bool sleepy: false
+  // Dilated pupils while the eyes are following something.
+  property bool alert: false
   property color bodyColor: "#1c1c28"
   property color rimColor: "#ffe14d"
   property color wellColor: "#0b0b12"
@@ -18,10 +20,14 @@ Item {
   implicitHeight: 16
 
   readonly property real eyeW: pixel * 6
-  readonly property real eyeH: blink ? pixel : (sleepy ? pixel * 3 : pixel * 6)
+  readonly property real eyeH: sleepy ? pixel * 3 : pixel * 6
   readonly property real gap: pixel * 2
-  readonly property real pupil: sleepy ? pixel : pixel * 2
-  readonly property real maxOff: pixel * 1.5
+  property real pupil: (sleepy ? pixel : pixel * 2) * (alert && !sleepy ? 1.35 : 1)
+
+  Behavior on pupil { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+  // Full travel inside the well, so looking up reaches the top of the eye.
+  readonly property real maxOffX: (eyeW - pupil) / 2
+  readonly property real maxOffY: (eyeH - pupil) / 2
 
   Rectangle {
     anchors.centerIn: parent
@@ -52,12 +58,12 @@ Item {
       }
 
       Rectangle {
-        visible: !root.blink
         width: root.pupil
-        height: root.sleepy ? Math.max(1, root.pixel) : root.pupil
+        height: root.blink ? Math.max(1, root.pixel / 2)
+                           : (root.sleepy ? Math.max(1, root.pixel) : root.pupil)
         color: root.pupilColor
-        x: (parent.width - width) / 2 + root.lookX * root.maxOff
-        y: (parent.height - height) / 2 + root.lookY * root.maxOff
+        x: (parent.width - width) / 2 + root.lookX * root.maxOffX
+        y: (parent.height - height) / 2 + root.lookY * root.maxOffY
       }
     }
   }

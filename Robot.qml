@@ -8,7 +8,8 @@ Item {
   property real lookY: 0
   property bool blink: false
   property bool sleepy: false
-  property string mood: "watching"
+  property bool alert: false
+  property string mood: "idle"
   property color accent: "#3dfff3"
   property color yellow: "#ffe14d"
   property color chassis: "#2a2438"
@@ -21,7 +22,9 @@ Item {
 
   Column {
     anchors.centerIn: parent
-    spacing: root.px * 2
+    // Zero spacing: the Eyes and torso items already carry their own slack, so
+    // any column gap reads as a break between head, neck, and body.
+    spacing: 0
 
     // Head
     Eyes {
@@ -32,6 +35,7 @@ Item {
       lookX: root.lookX
       lookY: root.lookY
       blink: root.blink
+      alert: root.alert
       sleepy: root.sleepy
       rimColor: root.yellow
       pupilColor: root.accent
@@ -39,10 +43,11 @@ Item {
       wellColor: root.dark
     }
 
-    // Neck
+    // Neck. The Eyes item leaves empty space below its drawn head box, so the
+    // neck has to span that too or the robot looks decapitated.
     Rectangle {
       width: root.px * 3
-      height: root.px * 4
+      height: root.px * 10
       color: root.yellow
       anchors.horizontalCenter: parent.horizontalCenter
     }

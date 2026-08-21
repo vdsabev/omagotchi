@@ -6,84 +6,42 @@ import qs.Commons
 import qs.Ui
 import "PetState.js" as PetState
 
-BarWidget {
+// The bar eyes and the popup live in one Panel-rooted entry point: the bar host
+// wires `bar`/`settings` into the widget it instantiates, and only that
+// instance's PanelController can show a popup.
+Panel {
   id: root
   moduleName: "omagotchi.pet"
+  ipcTarget: "omagotchi.pet"
 
   property bool blink: false
   property real lastClickMs: 0
-  property string mood: "watching"
+  property string mood: "idle"
   property string nickname: "W-E"
+  property string hatchedIso: new Date().toISOString()
 
-  readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
-  readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
+  readonly property bool verticalBar: bar ? bar.vertical : false
   readonly property color themeFg: bar ? bar.foreground : Color.foreground
   readonly property color themeBg: bar ? bar.background : Qt.rgba(0.05, 0.05, 0.07, 1)
   readonly property color themeAccent: Color.accent
+  readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
 
-  function open() {
-    if (panelLoader.item) panelLoader.item.open()
-  }
-
-  function close() {
-    if (panelLoader.item) panelLoader.item.close()
-  }
-
-  function togglePanel() {
-    if (panelLoader.item) panelLoader.item.toggle()
-  }
-
-  function closeForPopoutSwitch() {
-    if (panelLoader.item) panelLoader.item.closeForPopoutSwitch()
-  }
-
-  function injectPanel() {
-    var target = panelLoader.item
-    if (!target) return
-    if ("bar" in target) target.bar = root.bar
-    if ("settings" in target) target.settings = root.settings
-    if ("anchorItem" in target) target.anchorItem = hit
-    if ("hostWidget" in target) target.hostWidget = root
-    if ("pet" in target) {
-      target.pet = {
-        lookX: tracker.lookX,
-        lookY: tracker.lookY,
-        blink: root.blink,
-        sleepy: root.mood === "sleepy" || root.mood === "night",
-        mood: root.mood,
-        flavor: PetState.flavor(root.mood),
-        accent: root.themeAccent,
-        foreground: root.themeFg,
-        background: root.themeBg,
-        nickname: root.nickname
-      }
-    }
-  }
+  implicitWidth: verticalBar ? Style.bar.iconSlot : 36
+  implicitHeight: verticalBar ? 28 : (bar ? bar.barSize : 26)
 
   function tickMood() {
-    var hour = new Date().getHours()
-    root.mood = PetState.moodFor(Date.now(), tracker.lastMoveMs, root.lastClickMs, hour, tracker.lastGlanceMs)
-    injectPanel()
+    root.mood = PetState.moodFor(Date.now(), tracker.lastMoveMs, root.lastClickMs, new Date().getHours(), tracker.lastGlanceMs)
   }
 
   function persistClick() {
     root.lastClickMs = Date.now()
     root.mood = "happy"
     stateFile.setText(JSON.stringify({
-      hatched: hatchedIso,
+      hatched: root.hatchedIso,
       lastClick: root.lastClickMs,
       nickname: root.nickname
     }, null, 2))
-    injectPanel()
   }
-
-  property string hatchedIso: new Date().toISOString()
-
-  implicitWidth: vertical ? Style.bar.iconSlot : 36
-  implicitHeight: vertical ? 28 : (bar ? bar.barSize : 26)
-
-  onBarChanged: injectPanel()
-  onSettingsChanged: injectPanel()
 
   CursorTracker {
     id: tracker
@@ -94,8 +52,7 @@ BarWidget {
     running: true
     repeat: true
     onTriggered: {
-      if (hit)
-        tracker.setAnchor(hit)
+      tracker.setAnchor(hit)
       root.tickMood()
     }
   }
@@ -106,8 +63,6 @@ BarWidget {
     repeat: true
     onTriggered: {
       interval = 2200 + Math.random() * 4000
-      if (root.mood === "sleepy")
-        return
       root.blink = true
       blinkOff.start()
     }
@@ -115,7 +70,7 @@ BarWidget {
 
   Timer {
     id: blinkOff
-    interval: 90
+    interval: 130
     onTriggered: root.blink = false
   }
 
@@ -144,52 +99,111 @@ BarWidget {
     }
   }
 
-  Loader {
-    id: panelLoader
-    active: true
-    source: Qt.resolvedUrl("Panel.qml")
-    visible: false
-    onLoaded: {
-      root.injectPanel()
-      Qt.callLater(root.injectPanel)
+  // The bar dispatches clicks to registered targets, so the pet must sit in a
+  // WidgetButton — a plugin's own MouseArea never sees bar input.
+  BarIconButton {
+    id: hit
+    anchors.fill: parent
+    bar: root.bar
+    tooltipText: PetState.flavor(root.mood)
+
+    iconComponent: Component {
+      Eyes {
+        anchors.fill: parent
+        lookX: tracker.lookX
+        lookY: tracker.lookY
+        blink: root.blink
+        alert: tracker.tracking
+        sleepy: root.mood === "sleepy" || root.mood === "night"
+        rimColor: root.themeFg
+        pupilColor: root.themeAccent
+        wellColor: root.themeBg
+        bodyColor: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
+      }
+    }
+
+    onPressed: function(button) {
+      if (button === Qt.RightButton) {
+        if (root.bar)
+          root.bar.showTooltip(hit, PetState.flavor(root.mood))
+        return
+      }
+      root.persistClick()
+      root.toggle()
     }
   }
 
-  Item {
-    id: hit
-    anchors.fill: parent
+  KeyboardPanel {
+    id: panel
+    anchorItem: hit
+    owner: root
+    bar: root.bar
+    open: root.opened
+    centerOnBar: false
+    focusTarget: keyCatcher
+    contentWidth: panel.fittedContentWidth(Style.space(280))
+    contentHeight: panel.fittedContentHeight(stage.implicitHeight + Style.space(24))
 
-    Eyes {
-      anchors.centerIn: parent
-      width: Math.min(parent.width - 4, 32)
-      height: Math.min(parent.height - 4, 16)
-      lookX: tracker.lookX
-      lookY: tracker.lookY
-      blink: root.blink
-      sleepy: root.mood === "sleepy" || root.mood === "night"
-      rimColor: root.themeFg
-      pupilColor: root.themeAccent
-      wellColor: root.themeBg
-      bodyColor: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
-    }
-
-    MouseArea {
+    PanelKeyCatcher {
+      id: keyCatcher
       anchors.fill: parent
-      acceptedButtons: Qt.LeftButton | Qt.RightButton
-      hoverEnabled: true
-      cursorShape: Qt.PointingHandCursor
-      onPressed: function(mouse) {
-        if (mouse.button === Qt.RightButton) {
-          if (root.bar)
-            root.bar.showTooltip(hit, PetState.flavor(root.mood))
-          return
+      onCloseRequested: root.close()
+      onTabRequested: function(direction) { root.switchPanel(direction) }
+      onActivateRequested: root.close()
+
+      Column {
+        id: stage
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: Style.space(8)
+        spacing: Style.space(10)
+        width: parent.width - Style.space(16)
+
+        Text {
+          anchors.horizontalCenter: parent.horizontalCenter
+          text: (root.nickname || "W-E").toUpperCase()
+          color: root.themeAccent
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.body
+          font.letterSpacing: 3
+          font.bold: true
         }
-        root.persistClick()
-        root.togglePanel()
-      }
-      onReleased: {
-        if (root.bar)
-          root.bar.hideTooltip(hit)
+
+        Text {
+          width: parent.width
+          horizontalAlignment: Text.AlignHCenter
+          text: PetState.icon(root.mood) + " " + root.mood.toUpperCase()
+          color: Qt.darker(root.themeFg, 1.6)
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.caption
+          font.letterSpacing: 2
+        }
+
+        Robot {
+          width: parent.width
+          height: 180
+          lookX: tracker.lookX
+          lookY: tracker.lookY
+          blink: root.blink
+          alert: tracker.tracking
+          sleepy: root.mood === "sleepy" || root.mood === "night"
+          mood: root.mood
+          accent: root.themeAccent
+          yellow: root.themeFg
+          chassis: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
+          dark: root.themeBg
+        }
+
+        Text {
+          width: parent.width
+          horizontalAlignment: Text.AlignHCenter
+          wrapMode: Text.WordWrap
+          text: PetState.flavor(root.mood)
+          color: root.themeFg
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.bodySmall
+          opacity: 0.85
+        }
       }
     }
   }

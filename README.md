@@ -20,11 +20,11 @@ Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
 
 ## Features
 
-- Bar: binocular eyes themed from the Omarchy bar (`bar.foreground`, `bar.background`, `Color.accent`). Pupils glance at the cursor when you move your mouse, then settle down. Between glances they wander and blink. Sleepy lids at night or after idle.
+- Bar: binocular eyes themed from the Omarchy bar (`bar.foreground`, `bar.background`, `Color.accent`). Pupils follow the cursor while you move the mouse, then wander when it is still. Blinking happens inside the eyes. Sleepy lids at night or after idle.
 - Left click: popup with the full robot and a mood line.
 - Right click: tooltip with the current flavor line.
 - Moods:
-	- `watching`
+	- `idle`
 	- `curious` (glancing at the pointer)
 	- `sleepy` (idle)
 	- `night` (22:00–07:00)
@@ -34,10 +34,9 @@ Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
 ## File structure
 
 - `manifest.json` - plugin contract (kind: bar-widget)
-- `BarWidget.qml` - bar eyes + panel host
-- `CursorTracker.qml` - hyprctl cursorpos → short glance bursts
+- `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
+- `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
 - `Eyes.qml` - shared binocular head
-- `Panel.qml` - popup stage
 - `PetState.js` - moods + flavor
 - `Robot.qml` - full body
 
