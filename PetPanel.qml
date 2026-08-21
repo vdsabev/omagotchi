@@ -5,12 +5,9 @@ import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
 
-// Popup that stays open until it is closed on purpose.
-//
-// Not Ui.KeyboardPanel: that one spans the screen with a MouseArea that closes
-// on any click outside the card, and without the close the same overlay would
-// swallow every click on the desktop. This window is only as large as the card,
-// so the rest of the screen keeps working while the pet is on show.
+// Full-screen overlay panel. A MouseArea covers the screen and closes the
+// panel on outside clicks; a Region mask excludes the bar strip so bar
+// interactions still work.
 PanelWindow {
   id: root
 
@@ -53,45 +50,60 @@ PanelWindow {
     ? (barVertical ? anchorWindow.width : anchorWindow.height)
     : 0
   readonly property point anchorPos: {
-    anchorWatcher.revision  // reactive dependency
+    anchorWatcher.transform  // reactive dependency
     if (!anchorItem || !anchorWindow)
       return Qt.point(0, 0)
     return anchorItem.mapToItem(anchorWindow.contentItem, 0, 0)
   }
 
-  function clampAlong(pos, size, limit) {
-    return Math.round(Math.max(gap, Math.min(pos, limit - size - gap)))
+  readonly property real barW: anchorWindow ? anchorWindow.width : screenW
+  readonly property real barH: anchorWindow ? anchorWindow.height : 0
+  readonly property real screenW: screen ? screen.width : 0
+  readonly property real screenH: screen ? screen.height : 0
+  readonly property real anchorW: anchorItem ? anchorItem.width : 0
+  readonly property real anchorH: anchorItem ? anchorItem.height : 0
+
+  readonly property point cardOrigin: {
+    if (!anchorItem || !bar) return Qt.point(gap, gap)
+    var x = 0, y = 0
+    if (barPos === "bottom") {
+      x = anchorPos.x + anchorW / 2 - contentWidth / 2
+      y = screenH - barH - contentHeight - gap
+    } else if (barPos === "top") {
+      x = anchorPos.x + anchorW / 2 - contentWidth / 2
+      y = barH + gap
+    } else if (barPos === "left") {
+      x = barW + gap
+      y = anchorPos.y + anchorH / 2 - contentHeight / 2
+    } else { // "right"
+      x = screenW - barW - contentWidth - gap
+      y = anchorPos.y + anchorH / 2 - contentHeight / 2
+    }
+    x = Math.max(gap, Math.min(x, screenW - contentWidth - gap))
+    y = Math.max(gap, Math.min(y, screenH - contentHeight - gap))
+    return Qt.point(Math.round(x), Math.round(y))
   }
 
   screen: anchorWindow ? anchorWindow.screen : null
   visible: open
   color: "transparent"
   exclusionMode: ExclusionMode.Ignore
-  implicitWidth: contentWidth
-  implicitHeight: contentHeight
 
   WlrLayershell.namespace: "omagotchi-panel"
   WlrLayershell.layer: WlrLayer.Overlay
   WlrLayershell.keyboardFocus: open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-  // One anchored edge per axis, so the window keeps its own size and the
-  // margins place it next to the icon.
+  // Full-screen overlay — the card inside is positioned explicitly via cardOrigin.
   anchors {
-    top: barPos !== "bottom"
-    bottom: barPos === "bottom"
-    left: barPos !== "right"
-    right: barPos === "right"
+    top: true
+    bottom: true
+    left: true
+    right: true
   }
 
-  margins {
-    top: root.barVertical
-      ? root.clampAlong(root.anchorPos.y, root.contentHeight, root.screen ? root.screen.height : 0)
-      : (root.barPos === "top" ? root.barThickness + root.gap : 0)
-    bottom: root.barPos === "bottom" ? root.barThickness + root.gap : 0
-    left: root.barVertical
-      ? (root.barPos === "left" ? root.barThickness + root.gap : 0)
-      : root.clampAlong(root.anchorPos.x, root.contentWidth, root.screen ? root.screen.width : 0)
-    right: root.barPos === "right" ? root.barThickness + root.gap : 0
+  mask: Region {
+    width: root.screenW
+    height: root.screenH
   }
 
   onVisibleChanged: {
@@ -99,21 +111,29 @@ PanelWindow {
       Qt.callLater(function() { if (root.focusTarget) root.focusTarget.forceActiveFocus() })
   }
 
-  // mapToItem is not a binding dependency, so watch the anchor for layout moves.
-  Item {
+  // Track every layout change between the bar's contentItem and the
+  // anchor item. `transform` updates whenever any item in that chain
+  // moves/resizes, which is what makes the position binding below
+  // actually reactive — mapToItem on its own is a one-shot.
+  TransformWatcher {
     id: anchorWatcher
-    property int revision: 0
-    Connections {
-      target: root.anchorItem
-      function onXChanged() { anchorWatcher.revision++ }
-      function onYChanged() { anchorWatcher.revision++ }
-      function onWidthChanged() { anchorWatcher.revision++ }
-    }
+    a: anchorWindow ? anchorWindow.contentItem : null
+    b: anchorItem
+  }
+
+  // Clicking anywhere outside the card closes the panel.
+  MouseArea {
+    anchors.fill: parent
+    acceptedButtons: Qt.AllButtons
+    onClicked: root.closeRequested()
   }
 
   BorderSurface {
     id: card
-    anchors.fill: parent
+    x: root.cardOrigin.x
+    y: root.cardOrigin.y
+    width: root.contentWidth
+    height: root.contentHeight
     color: Color.popups.background
     borderSpec: Border.surfaceSpec("popups", "border", Color.popups.border, Math.max(1, Style.space(2)))
     padding: root.padding

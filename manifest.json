@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "vdsabev.omagotchi",
   "name": "Omagotchi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "vdsabev",
   "description": "A tiny Wall-E-like robot pet. Eyes watch from the bar; click for the full bot.",
   "kinds": ["bar-widget"],
