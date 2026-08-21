@@ -1,14 +1,5 @@
 # TODO
 
-## Nickname
-
-Default is Omagotchi. Click the name in the popup to edit it (keyboard-reachable).
-
-- [ ] Type a name, Enter to keep it, Escape to cancel
-  - [ ] Empty falls back to Omagotchi
-  - [ ] Shows on the popup and the bar right away, and after a restart
-  - [ ] Flavor line can use the name once in a while
-
 ## Play
 
 Game strip under the mood line (keyboard-reachable). Click a game → close popup → launch it detached.

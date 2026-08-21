@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs"
 
 const src = readFileSync(new URL("./PetState.js", import.meta.url), "utf8")
   .replace(".pragma library", "")
-const PetState = new Function(src + "\nreturn { moodFor, icon, flavor, defaultState }")()
+const PetState = new Function(src + "\nreturn { moodFor, icon, flavor, defaultState, normalizeNickname, DEFAULT_NICKNAME }")()
 
 const NOW = 1000000
 const mood = (o = {}) => PetState.moodFor(
@@ -38,11 +38,27 @@ test("curious lasts as long as CursorTracker holds the look", () => {
   assert.equal(mood({ lastGlance: NOW - 5000 }), "idle")
 })
 
-test("every mood has an icon and a line", () => {
+test("every mood has an icon and a line, named and plain", () => {
   for (const id of ["idle", "curious", "sleepy", "happy", "night"]) {
     assert.ok(PetState.icon(id))
-    assert.ok(PetState.flavor(id))
+    assert.ok(PetState.flavor(id, "Bolt", 1))
+    assert.match(PetState.flavor(id, "Bolt", 0), /Bolt/)
   }
   assert.equal(PetState.icon("nonsense"), PetState.icon("idle"))
-  assert.equal(PetState.flavor("nonsense"), PetState.flavor("idle"))
+  assert.equal(PetState.flavor("nonsense", "Bolt", 1), PetState.flavor("idle", "Bolt", 1))
+})
+
+test("the name only turns up on a low roll", () => {
+  assert.doesNotMatch(PetState.flavor("idle", "Bolt", 0.9), /Bolt/)
+  assert.doesNotMatch(PetState.flavor("idle", "Bolt", undefined), /Bolt/)
+  assert.doesNotMatch(PetState.flavor("idle", "", 0), /undefined/)
+})
+
+test("a nickname is trimmed, squeezed, capped, and never empty", () => {
+  assert.equal(PetState.normalizeNickname("  Bolt  "), "Bolt")
+  assert.equal(PetState.normalizeNickname("Little\n Bolt"), "Little Bolt")
+  assert.equal(PetState.normalizeNickname("   "), PetState.DEFAULT_NICKNAME)
+  assert.equal(PetState.normalizeNickname(null), PetState.DEFAULT_NICKNAME)
+  assert.equal(PetState.normalizeNickname("x".repeat(40)).length, 24)
+  assert.equal(PetState.defaultState().nickname, PetState.DEFAULT_NICKNAME)
 })

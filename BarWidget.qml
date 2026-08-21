@@ -17,8 +17,12 @@ Panel {
   property bool blink: false
   property real lastClickMs: 0
   property string mood: "idle"
-  property string nickname: "W-E"
+  property string nickname: PetState.DEFAULT_NICKNAME
   property string hatchedIso: new Date().toISOString()
+  readonly property bool editingName: panel.editingName
+  // Re-drawn per mood change, so the flavor line does not flicker between the
+  // plain and the named variant while the mood holds.
+  property real flavorRoll: 1
 
   readonly property bool verticalBar: bar ? bar.vertical : false
   readonly property color themeFg: bar ? bar.foreground : Color.foreground
@@ -29,18 +33,26 @@ Panel {
   implicitWidth: verticalBar ? Style.bar.iconSlot : 36
   implicitHeight: verticalBar ? 28 : (bar ? bar.barSize : 26)
 
+  readonly property string flavorText: PetState.flavor(root.mood, root.nickname, root.flavorRoll)
+
+  onMoodChanged: root.flavorRoll = Math.random()
+
   function tickMood() {
     root.mood = PetState.moodFor(Date.now(), tracker.lastMoveMs, root.lastClickMs, new Date().getHours(), tracker.lastGlanceMs)
   }
 
-  function persistClick() {
-    root.lastClickMs = Date.now()
-    root.mood = "happy"
+  function persistState() {
     stateFile.setText(JSON.stringify({
       hatched: root.hatchedIso,
       lastClick: root.lastClickMs,
       nickname: root.nickname
     }, null, 2))
+  }
+
+  function persistClick() {
+    root.lastClickMs = Date.now()
+    root.mood = "happy"
+    root.persistState()
   }
 
   CursorTracker {
@@ -84,7 +96,7 @@ Panel {
         var raw = typeof text === "function" ? text() : text
         var s = JSON.parse(raw)
         if (s.hatched) root.hatchedIso = s.hatched
-        if (s.nickname) root.nickname = s.nickname
+        if (s.nickname) root.nickname = PetState.normalizeNickname(s.nickname)
         if (s.lastClick) root.lastClickMs = s.lastClick
       } catch (e) {}
     }
@@ -106,7 +118,7 @@ Panel {
     id: hit
     anchors.fill: parent
     bar: root.bar
-    tooltipText: PetState.flavor(root.mood)
+    tooltipText: root.flavorText
 
     iconComponent: Component {
       Eyes {
@@ -126,7 +138,7 @@ Panel {
     onPressed: function(button) {
       if (button === Qt.RightButton) {
         if (root.bar)
-          root.bar.showTooltip(hit, PetState.flavor(root.mood))
+          root.bar.showTooltip(hit, root.flavorText)
         return
       }
       root.persistClick()
@@ -139,6 +151,7 @@ Panel {
     anchorItem: hit
     bar: root.bar
     open: root.opened
+    editingName: nameField.editing
     focusTarget: keyCatcher
     contentWidth: Style.space(280)
     contentHeight: stage.implicitHeight + Style.space(40)
@@ -147,8 +160,15 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      onCloseRequested: root.close()
-      onActivateRequested: root.close()
+      onCloseRequested: if (!root.editingName) root.close()
+      onActivateRequested: if (!root.editingName) root.close()
+
+      // A click anywhere else in the card ends the edit, which commits the name.
+      MouseArea {
+        anchors.fill: parent
+        enabled: nameField.editing
+        onPressed: keyCatcher.forceActiveFocus()
+      }
 
       Column {
         id: stage
@@ -158,14 +178,18 @@ Panel {
         spacing: Style.space(10)
         width: parent.width - Style.space(16)
 
-        Text {
+        NicknameField {
+          id: nameField
           anchors.horizontalCenter: parent.horizontalCenter
-          text: (root.nickname || "W-E").toUpperCase()
-          color: root.themeAccent
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.body
-          font.letterSpacing: 3
-          font.bold: true
+          width: Math.min(parent.width, Style.space(200))
+          nickname: root.nickname
+          textColor: root.themeAccent
+          fontFamily: root.contentFontFamily
+          onCommit: function(name) {
+            root.nickname = PetState.normalizeNickname(name)
+            root.persistState()
+          }
+          onEditFinished: keyCatcher.forceActiveFocus()
         }
 
         Text {
@@ -197,7 +221,7 @@ Panel {
           width: parent.width
           horizontalAlignment: Text.AlignHCenter
           wrapMode: Text.WordWrap
-          text: PetState.flavor(root.mood)
+          text: root.flavorText
           color: root.themeFg
           font.family: root.contentFontFamily
           font.pixelSize: Style.font.bodySmall

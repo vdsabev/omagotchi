@@ -22,6 +22,9 @@ PanelWindow {
   property int padding: Style.spacing.popupPadding
   property int gap: Style.gapsOut
   property Item focusTarget: null
+  // The card decides whether a name is being typed; the widget reads it back to
+  // keep Enter and Escape away from the close handlers.
+  property bool editingName: false
 
   default property alias contentItem: contentHolder.children
 
