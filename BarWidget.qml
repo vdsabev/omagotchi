@@ -133,22 +133,20 @@ Panel {
     }
   }
 
-  KeyboardPanel {
+  PetPanel {
     id: panel
     anchorItem: hit
-    owner: root
     bar: root.bar
     open: root.opened
-    centerOnBar: false
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(280))
-    contentHeight: panel.fittedContentHeight(stage.implicitHeight + Style.space(24))
+    contentWidth: Style.space(280)
+    contentHeight: stage.implicitHeight + Style.space(40)
+    onCloseRequested: root.close()
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
       onCloseRequested: root.close()
-      onTabRequested: function(direction) { root.switchPanel(direction) }
       onActivateRequested: root.close()
 
       Column {
