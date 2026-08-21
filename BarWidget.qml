@@ -1,10 +1,12 @@
 import QtQuick
 import QtCore
+import QtQuick.Window
 import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "PetState.js" as PetState
+import "Games.js" as Games
 
 // The bar eyes and the popup live in one Panel-rooted entry point: the bar host
 // wires `bar`/`settings` into the widget it instantiates, and only that
@@ -23,6 +25,12 @@ Panel {
   // Re-drawn per mood change, so the flavor line does not flicker between the
   // plain and the named variant while the mood holds.
   property real flavorRoll: 1
+  property var extraGames: []
+  property var pluginState: ({})
+  // A short message that takes over the flavor line: install and launch news.
+  property string notice: ""
+
+  readonly property var games: Games.allGames(root.extraGames)
 
   readonly property bool verticalBar: bar ? bar.vertical : false
   readonly property color themeFg: bar ? bar.foreground : Color.foreground
@@ -33,7 +41,12 @@ Panel {
   implicitWidth: verticalBar ? Style.bar.iconSlot : 36
   implicitHeight: verticalBar ? 28 : (bar ? bar.barSize : 26)
 
-  readonly property string flavorText: PetState.flavor(root.mood, root.nickname, root.flavorRoll)
+  readonly property string flavorText: root.notice || PetState.flavor(root.mood, root.nickname, root.flavorRoll)
+
+  function say(text) {
+    root.notice = text
+    noticeTimer.restart()
+  }
 
   onMoodChanged: root.flavorRoll = Math.random()
 
@@ -82,6 +95,12 @@ Panel {
   }
 
   Timer {
+    id: noticeTimer
+    interval: 6000
+    onTriggered: root.notice = ""
+  }
+
+  Timer {
     id: blinkOff
     interval: 130
     onTriggered: root.blink = false
@@ -101,6 +120,25 @@ Panel {
       } catch (e) {}
     }
   }
+
+  FileView {
+    id: gamesFile
+    path: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.config/omagotchi/games.json"
+    printErrors: false
+    onLoaded: root.extraGames = Games.parseGamesFile(typeof text === "function" ? text() : text)
+  }
+
+  // Which game plugins are installed can change while the shell runs, so the
+  // list is re-read every time the popup opens.
+  Process {
+    id: pluginList
+    command: ["omarchy", "plugin", "list", "--json"]
+    stdout: StdioCollector {
+      onStreamFinished: root.pluginState = Games.pluginState(text)
+    }
+  }
+
+  onOpenedChanged: if (root.opened) pluginList.running = true
 
   Process {
     id: ensureDir
@@ -162,6 +200,12 @@ Panel {
       anchors.fill: parent
       onCloseRequested: if (!root.editingName) root.close()
       onActivateRequested: if (!root.editingName) root.close()
+      onTabRequested: function(direction) {
+        var from = keyCatcher.Window.activeFocusItem || keyCatcher
+        var next = from.nextItemInFocusChain(direction > 0)
+        if (next)
+          next.forceActiveFocus()
+      }
 
       // A click anywhere else in the card ends the edit, which commits the name.
       MouseArea {
@@ -215,6 +259,17 @@ Panel {
           yellow: root.themeFg
           chassis: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
           dark: root.themeBg
+        }
+
+        GameStrip {
+          anchors.horizontalCenter: parent.horizontalCenter
+          games: root.games
+          plugins: root.pluginState
+          foreground: root.themeFg
+          fontFamily: root.contentFontFamily
+          onNotice: function(text) { root.say(text) }
+          onLaunched: root.close()
+          onRefreshRequested: pluginList.running = true
         }
 
         Text {

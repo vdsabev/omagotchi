@@ -1,16 +1,5 @@
 # TODO
 
-## Play
-
-Game strip under the mood line (keyboard-reachable). Click a game → close popup → launch it detached.
-
-- [ ] Always listed: Omasweeper, Quattrolitaire, Tetris
-  - [ ] Extra games in `~/.config/omagotchi/games.json` (`id`, `label`, `kind: plugin|tui|gui`, `command`, optional `install`)
-- [ ] `plugin`: `omarchy-shell shell toggle <id>` (Omasweeper `jankeesvw.omasweeper`, Quattrolitaire `nosignal.quattrolitaire`, Tetris `terminal.tetris`)
-  - [ ] Missing plugin: confirm, then `omarchy plugin add <url> --enable`, then toggle
-  - [ ] TUI in `$TERMINAL` / kitty; GUI as-is
-  - [ ] Missing binary: flavor line
-
 ## Care
 
 Attention makes it happy for a moment, then it settles.
