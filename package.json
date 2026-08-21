@@ -1,0 +1,7 @@
+{
+  "name": "omagotchi",
+  "private": true,
+  "scripts": {
+    "test": "node --test '*.test.mjs'"
+  }
+}

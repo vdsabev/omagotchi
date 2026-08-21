@@ -29,7 +29,7 @@ Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
 	- `sleepy` (idle)
 	- `night` (22:00–07:00)
 	- `happy` (you clicked)
-- State: `~/.config/omarchy/state.json` (nickname, last click).
+- State: `~/.config/omagotchi/state.json` (nickname, last click).
 
 ## File structure
 
@@ -38,6 +38,8 @@ Requires Omarchy Quattro (`omarchy-shell` / Quickshell).
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
 - `Eyes.qml` - shared binocular head
 - `PetState.js` - moods + flavor
+- `PetState.test.mjs` - mood tests, `npm test`
+- `PetPanel.qml` - persistent popup window
 - `Robot.qml` - full body
 
 ## Later

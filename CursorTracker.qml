@@ -26,6 +26,9 @@ Item {
   property int widgetW: 28
   property int widgetH: 16
   property bool idleWander: true
+  // Set while the pet dozes: nothing but the slow wander is on show, so the
+  // cursor barely needs watching.
+  property bool dozing: false
 
   // Cursor distance that pins the pupils at the horizontal edge of the eye.
   readonly property real reachX: 320
@@ -114,13 +117,26 @@ Item {
   readonly property string socketPath: Quickshell.env("XDG_RUNTIME_DIR") + "/hypr/"
     + Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") + "/.socket.sock"
 
+  // A poll with no answer means Hyprland is gone or restarting. Wait instead of
+  // hammering a dead socket every tick.
+  property real backoffUntil: 0
+  property bool pending: false
+
   Timer {
-    interval: root.tracking ? 90 : 250
+    interval: root.tracking ? 90 : (root.dozing ? 1000 : 250)
     running: true
     repeat: true
     onTriggered: {
-      if (sock.connected)
+      var now = Date.now()
+      if (root.pending) {
+        root.pending = false
+        sock.connected = false
+        root.backoffUntil = now + 1000
         return
+      }
+      if (now < root.backoffUntil || sock.connected)
+        return
+      root.pending = true
       sock.connected = true
     }
   }
@@ -158,6 +174,7 @@ Item {
       splitMarker: ""
       onRead: function(chunk) {
         sock.connected = false
+        root.pending = false
         var parts = chunk.trim().split(",")
         if (parts.length < 2)
           return

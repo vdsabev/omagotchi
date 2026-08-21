@@ -45,6 +45,7 @@ Panel {
 
   CursorTracker {
     id: tracker
+    dozing: root.mood === "sleepy" || root.mood === "night"
   }
 
   Timer {
