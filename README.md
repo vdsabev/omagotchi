@@ -1,6 +1,6 @@
 # Omagotchi
 
-A cute robot that sits in your [Omarchy](https://github.com/basecamp/omarchy) bar and keeps you company while you work.
+A cute tiny robot that sits in your [Omarchy](https://github.com/basecamp/omarchy) bar and keeps you company while you work.
 
 ![Omagotchi preview](screenshot.png)
 
@@ -28,23 +28,18 @@ omarchy plugin remove vdsabev.omagotchi
 ## Dependencies
 
 - Omarchy Quattro (`omarchy-shell` / Quickshell)
-- Hyprland socket — `cursorpos` is used to track the cursor for pupil direction
-- `$TERMINAL` — required to launch TUI games (e.g. Omasweeper, Quattrolitaire)
-- Uninstalled games are offered via a one-time `omarchy plugin add` confirmation in the popup
-
-## State
-
-The plugin writes nickname and last-click state to `~/.config/omagotchi/state.json`.
+- Hyprland socket - `cursorpos` is used to track the cursor for pupil direction
+- `$TERMINAL` - required to launch TUI games (e.g. Omasweeper, Quattrolitaire)
 
 ## Features
 
-- Bar: binocular eyes themed from the Omarchy bar (`bar.foreground`, `bar.background`, `Color.accent`). Pupils follow the cursor while you move the mouse, then wander when it is still. Blinking happens inside the eyes. Sleepy lids at night or after idle.
-- Left click: popup with the full robot, a mood line, and the game strip. Click the name (or Tab to it and press Enter) to rename: Enter keeps it, Escape cancels, empty falls back to Omagotchi.
-- Games: one row of icons under the robot, the name in the tooltip. Omasweeper, Quattrolitaire, and Tetris are always listed; a plugin that is not installed sits dimmed and asks once, in the flavor line, before `omarchy plugin add`. A game that is installed but switched off is switched on first. Extra games go in `~/.config/omagotchi/games.json` — an array of `{ id, label, icon, kind: plugin|tui|gui, command, install }`, where `tui` gets `$TERMINAL -e` and a missing binary answers in the flavor line.
-- Right click: tooltip with the current flavor line.
+- Omagotchi lives in the status bar and follows your moving mouse cursor.
+- Left click to open a popup with the full robot, a mood line, and the game strip.
+- Click the name to rename your bot.
+- Shortcuts to games: Omasweeper, Quattrolitaire, and Tetris. Custom games go in `~/.config/omagotchi/games.json` - an array of `{ id, label, icon, kind: plugin|tui|gui, command, install }`, where `tui` gets `$TERMINAL -e`. Games not yet installed are offered via a one-time `omarchy plugin add` confirmation in a popup.
 - Moods:
 	- `idle`
-	- `curious` (glancing at the pointer)
+	- `curious` (eyes following the pointer)
 	- `sleepy` (idle)
 	- `night` (22:00–07:00)
 	- `happy` (you clicked)
@@ -53,6 +48,7 @@ The plugin writes nickname and last-click state to `~/.config/omagotchi/state.js
 ## File structure
 
 - `manifest.json` - plugin contract (kind: bar-widget)
+- `package.json` - test runner config
 - `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
 - `Eyes.qml` - shared binocular head
