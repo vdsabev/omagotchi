@@ -115,3 +115,32 @@ function installCommand(game) {
 function enableCommand(game) {
   return ["omarchy", "plugin", "enable", game.id]
 }
+
+// The whole click decision, so the strip stays a thin dispatcher: what a click
+// on `game` should do, given the plugin state and the click context. `busy`
+// blocks everything while an install/enable is in flight; `confirmed` means
+// the game was already offered once and clicked again. Copy lives here so the
+// strip and the tests agree on the wording.
+function actionFor(game, state, opts) {
+  opts = opts || {}
+  if (opts.busy)
+    return { action: "ignore" }
+  if (isMissing(game, state)) {
+    if (!game.install)
+      return { action: "notice", notice: game.label + " is not installed." }
+    if (!opts.confirmed)
+      return { action: "confirm", notice: "Install " + game.label + "? Click again." }
+    return { action: "install", notice: "Fetching " + game.label + "…" }
+  }
+  if (isDisabled(game, state))
+    return { action: "enable" }
+  return { action: "launch" }
+}
+
+function tooltipFor(game, state, busyId) {
+  if (game.id === busyId)
+    return "Fetching " + game.label + "…"
+  if (isMissing(game, state))
+    return "Install " + game.label
+  return game.label
+}
