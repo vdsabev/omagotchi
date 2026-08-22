@@ -14,3 +14,16 @@ jobs:
         with:
           node-version: 24
       - run: npm test
+
+  # Every PR must bump the plugin version, so installs pick up the change.
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node checkManifest.mjs origin/${{ github.base_ref }}

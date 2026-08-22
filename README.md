@@ -49,6 +49,7 @@ omarchy plugin remove vdsabev.omagotchi
 ## File structure
 
 - `manifest.json` - plugin contract (kind: bar-widget)
+- `checkManifest.mjs` - CI guard requiring a version bump on every PR
 - `package.json` - test runner config
 - `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
