@@ -56,6 +56,7 @@ omarchy plugin remove vdsabev.omagotchi
 - `GameStrip.qml` - game icon strip, install confirm
 - `Games.js` - game list, launch and install commands
 - `Games.test.mjs` - game list tests
+- `loadLib.mjs` - test helper that loads QML libraries into Node
 - `NicknameField.qml` - editable pet name
 - `PetState.js` - moods, flavor, nickname rules
 - `PetState.test.mjs` - mood tests

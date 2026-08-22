@@ -1,12 +1,10 @@
-// PetState.js is a QML library, so it has no exports. Evaluate it and pull the
-// functions out of the module scope.
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { loadLib } from "./loadLib.mjs"
 
-const src = readFileSync(new URL("./PetState.js", import.meta.url), "utf8")
-  .replace(".pragma library", "")
-const PetState = new Function(src + "\nreturn { moodFor, icon, flavor, defaultState, normalizeNickname, DEFAULT_NICKNAME }")()
+const PetState = loadLib("./PetState.js", [
+  "moodFor", "icon", "flavor", "defaultState", "normalizeNickname", "DEFAULT_NICKNAME"
+])
 
 const NOW = 1000000
 const mood = (o = {}) => PetState.moodFor(
