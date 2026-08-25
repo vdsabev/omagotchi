@@ -49,6 +49,26 @@ function defaultState() {
   return {
     hatched: new Date().toISOString(),
     lastClick: 0,
+    muted: false,
     nickname: DEFAULT_NICKNAME
   }
+}
+
+// The state file is hand-editable and shared by every bar instance, so a
+// missing or malformed field falls back to its default instead of throwing.
+function parseState(raw) {
+  var state = defaultState()
+  var s
+  try {
+    s = JSON.parse(raw)
+  } catch (e) {
+    return state
+  }
+  if (!s || typeof s !== "object")
+    return state
+  if (s.hatched) state.hatched = String(s.hatched)
+  if (s.nickname) state.nickname = normalizeNickname(s.nickname)
+  if (s.lastClick) state.lastClick = Number(s.lastClick) || 0
+  state.muted = !!s.muted
+  return state
 }

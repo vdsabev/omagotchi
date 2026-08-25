@@ -3,7 +3,8 @@ import assert from "node:assert/strict"
 import { loadLib } from "./loadLib.mjs"
 
 const PetState = loadLib("./PetState.js", [
-  "moodFor", "icon", "flavor", "defaultState", "normalizeNickname", "DEFAULT_NICKNAME"
+  "moodFor", "icon", "flavor", "defaultState", "parseState", "normalizeNickname",
+  "DEFAULT_NICKNAME"
 ])
 
 const NOW = 1000000
@@ -59,4 +60,21 @@ test("a nickname is trimmed, squeezed, capped, and never empty", () => {
   assert.equal(PetState.normalizeNickname(null), PetState.DEFAULT_NICKNAME)
   assert.equal(PetState.normalizeNickname("x".repeat(40)).length, 24)
   assert.equal(PetState.defaultState().nickname, PetState.DEFAULT_NICKNAME)
+})
+
+test("a fresh pet starts unmuted", () => {
+  assert.equal(PetState.defaultState().muted, false)
+})
+
+test("a saved state round-trips, and a bad one falls back to the defaults", () => {
+  const saved = PetState.parseState('{"nickname":"  bo  bo ","lastClick":42,"muted":true}')
+  assert.equal(saved.nickname, "bo bo")
+  assert.equal(saved.lastClick, 42)
+  assert.equal(saved.muted, true)
+
+  for (const raw of ["", "{", "null", "[]"])
+    assert.deepEqual(PetState.parseState(raw).nickname, PetState.DEFAULT_NICKNAME)
+
+  // An older state file has no mute field, so the pet is heard until muted.
+  assert.equal(PetState.parseState('{"nickname":"bo"}').muted, false)
 })

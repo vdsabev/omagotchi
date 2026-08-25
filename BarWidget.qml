@@ -21,6 +21,7 @@ Panel {
   property string mood: "idle"
   property string nickname: PetState.DEFAULT_NICKNAME
   property string hatchedIso: new Date().toISOString()
+  property bool soundMuted: false
   readonly property bool editingName: panel.editingName
   // Re-drawn per mood change, so the flavor line does not flicker between the
   // plain and the named variant while the mood holds.
@@ -37,6 +38,14 @@ Panel {
   readonly property color themeBg: bar ? bar.background : Qt.rgba(0.05, 0.05, 0.07, 1)
   readonly property color themeAccent: Color.accent
   readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
+
+  // Every bar gets its own copy of the widget, so an unprompted sound would
+  // play once per monitor, in unison. The copy on the first screen takes them.
+  readonly property bool soundLead: {
+    var window = root.QsWindow ? root.QsWindow.window : null
+    var screens = Quickshell.screens
+    return !window || !window.screen || !screens.length || window.screen === screens[0]
+  }
 
   implicitWidth: verticalBar ? Style.bar.iconSlot : 36
   implicitHeight: verticalBar ? 28 : (bar ? bar.barSize : 26)
@@ -58,8 +67,17 @@ Panel {
     stateFile.setText(JSON.stringify({
       hatched: root.hatchedIso,
       lastClick: root.lastClickMs,
+      muted: root.soundMuted,
       nickname: root.nickname
     }, null, 2))
+  }
+
+  // Unmuting plays the popup sound back, so the button confirms itself.
+  function toggleMute() {
+    root.soundMuted = !root.soundMuted
+    root.persistState()
+    if (!root.soundMuted)
+      soundEngine.play("beep")
   }
 
   function persistClick() {
@@ -112,14 +130,15 @@ Panel {
     id: stateFile
     path: StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/.config/omagotchi/state.json"
     blockLoading: true
+    // A sibling bar writing the file is how a mute reaches this one.
+    watchChanges: true
+    onFileChanged: reload()
     onLoaded: {
-      try {
-        var raw = typeof text === "function" ? text() : text
-        var s = JSON.parse(raw)
-        if (s.hatched) root.hatchedIso = s.hatched
-        if (s.nickname) root.nickname = PetState.normalizeNickname(s.nickname)
-        if (s.lastClick) root.lastClickMs = s.lastClick
-      } catch (e) {}
+      var s = PetState.parseState(typeof text === "function" ? text() : text)
+      root.hatchedIso = s.hatched
+      root.nickname = s.nickname
+      root.lastClickMs = s.lastClick
+      root.soundMuted = s.muted
     }
   }
 
@@ -191,6 +210,13 @@ Panel {
 
   SoundEngine {
     id: soundEngine
+    muted: root.soundMuted
+  }
+
+  PowerWatcher {
+    enabled: root.soundLead
+    onPluggedIn: soundEngine.play("charge")
+    onUnplugged: soundEngine.play("unplug")
   }
 
   PetPanel {
@@ -198,11 +224,14 @@ Panel {
     anchorItem: hit
     bar: root.bar
     open: root.opened
+    muted: root.soundMuted
+    glyphFamily: root.contentFontFamily
     editingName: nameField.editing
     focusTarget: keyCatcher
     contentWidth: Style.space(280)
-    contentHeight: stage.implicitHeight + Style.space(40)
+    contentHeight: stage.implicitHeight + Style.space(20)
     onCloseRequested: root.close()
+    onMuteToggled: root.toggleMute()
 
     titleItem: NicknameField {
       id: nameField

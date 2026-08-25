@@ -29,6 +29,7 @@ omarchy plugin remove vdsabev.omagotchi
 
 - Omarchy Quattro (`omarchy-shell` / Quickshell)
 - Hyprland socket - `cursorpos` is used to track the cursor for pupil direction
+- UPower - charger sounds; without a battery the plugin stays silent on this point
 - `$TERMINAL` - required to launch TUI games (e.g. Omasweeper, Quattrolitaire)
 
 ## Features
@@ -43,8 +44,8 @@ omarchy plugin remove vdsabev.omagotchi
 	- `sleepy` (idle)
 	- `night` (22:00–07:00)
 	- `happy` (you clicked)
-- Sound effects: beep on popup open, whir on blink.
-- State: `~/.config/omagotchi/state.json` (nickname, last click).
+- Sound effects: beep on popup open, whir on blink, a rising chirp when the charger goes in and a falling tone when it comes out. The speaker button in the popup mutes them - it silences only Omagotchi, not the system, and reaches every bar.
+- State: `~/.config/omagotchi/state.json` (nickname, last click, mute).
 
 ## File structure
 
@@ -53,19 +54,23 @@ omarchy plugin remove vdsabev.omagotchi
 - `package.json` - test runner config
 - `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
+- `PowerWatcher.qml` - UPower `onBattery` → charger plug and unplug sounds
 - `Eyes.qml` - shared binocular head
 - `GameStrip.qml` - game icon strip, install confirm
 - `Games.js` - game list, launch and install commands
 - `Games.test.mjs` - game list tests
 - `loadLib.mjs` - test helper that loads QML libraries into Node
 - `NicknameField.qml` - editable pet name
-- `PetState.js` - moods, flavor, nickname rules
+- `PetState.js` - moods, flavor, nickname and state-file rules
 - `PetState.test.mjs` - mood tests
 - `PetPanel.qml` - persistent popup window
 - `Robot.qml` - full body
 - `SoundEngine.qml` - sound effect playback
 - `bin/beep.sh` - beep sound script
 - `bin/whir.sh` - whir sound script
+- `bin/charge.sh` - charger plug-in chirp
+- `bin/unplug.sh` - charger unplug tone
+- `bin/play.sh` - shared playback for the sound scripts
 
 Tests run with `npm test`.
 

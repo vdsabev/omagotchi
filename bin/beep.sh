@@ -6,7 +6,6 @@ dur=${2:-180}
 vol=${3:-0.3}
 
 tmp=$(mktemp /tmp/omagotchi-boop-honk-XXXXXX.wav)
-trap 'rm -f "$tmp"' EXIT
 
 python3 - "$freq" "$dur" "$vol" "$tmp" <<'PYEOF'
 import sys, math, struct, wave
@@ -49,10 +48,5 @@ with wave.open(out, "wb") as w:
     w.writeframes(bytes(frames))
 PYEOF
 
-if command -v pw-play >/dev/null 2>&1; then
-  pw-play --volume=1.0 "$tmp"
-elif command -v paplay >/dev/null 2>&1; then
-  paplay "$tmp"
-elif command -v aplay >/dev/null 2>&1; then
-  aplay -q "$tmp"
-fi
+# Hands the file over to be played and removed.
+exec sh "$(dirname "$0")/play.sh" "$tmp"
