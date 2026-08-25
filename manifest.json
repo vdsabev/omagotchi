@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "vdsabev.omagotchi",
   "name": "Omagotchi",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "author": "vdsabev",
   "description": "A cute tiny robot that sits in your Omarchy bar and keeps you company while you work.",
   "kinds": ["bar-widget"],

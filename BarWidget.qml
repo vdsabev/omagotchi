@@ -203,6 +203,19 @@ Panel {
     contentWidth: Style.space(280)
     contentHeight: stage.implicitHeight + Style.space(40)
     onCloseRequested: root.close()
+
+    titleItem: NicknameField {
+      id: nameField
+      width: parent.width
+      nickname: root.nickname
+      textColor: root.themeAccent
+      fontFamily: root.contentFontFamily
+      onCommit: function(name) {
+        root.nickname = PetState.normalizeNickname(name)
+        root.persistState()
+      }
+      onEditFinished: keyCatcher.forceActiveFocus()
+    }
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
@@ -226,23 +239,8 @@ Panel {
         id: stage
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: Style.space(8)
         spacing: Style.space(10)
         width: parent.width - Style.space(16)
-
-        NicknameField {
-          id: nameField
-          anchors.horizontalCenter: parent.horizontalCenter
-          width: Math.min(parent.width, Style.space(200))
-          nickname: root.nickname
-          textColor: root.themeAccent
-          fontFamily: root.contentFontFamily
-          onCommit: function(name) {
-            root.nickname = PetState.normalizeNickname(name)
-            root.persistState()
-          }
-          onEditFinished: keyCatcher.forceActiveFocus()
-        }
 
         Text {
           width: parent.width
