@@ -26,17 +26,21 @@ PanelWindow {
   // the card follows the bar icon until you drag it.
   property real dragX: -1
   property real dragY: -1
+  property bool muted: false
+  // The speaker glyphs sit outside Unicode, so they need the bar's Nerd Font.
+  property string glyphFamily: Style.font.family
 
   default property alias contentItem: contentHolder.children
-  // Sits in the top bar, between the drag grip and the close button.
+  // Sits in the top bar, between the mute button and the close button.
   property alias titleItem: titleHolder.children
 
   // The top bar overlays the card and anchors to its edge, ignoring the card
   // padding, so the content clears whichever of the two reaches lower.
   readonly property real titleBarHeight: closeButton.y + closeButton.height / 2
-    + Math.max(handle.height, titleHolder.height) / 2 + Style.space(8)
+    + Math.max(handle.height, muteButton.height, titleHolder.height) / 2 + Style.space(8)
 
   signal closeRequested()
+  signal muteToggled()
 
   // Hyprland's corner rounding, so the close button clears the rounded corner
   // instead of sitting under it.
@@ -181,11 +185,42 @@ PanelWindow {
     Item {
       id: titleHolder
       anchors.verticalCenter: closeButton.verticalCenter
-      anchors.left: handle.right
+      anchors.left: muteButton.right
       anchors.right: closeButton.left
-      anchors.leftMargin: Style.space(6)
-      anchors.rightMargin: Style.space(6)
+      anchors.leftMargin: Style.space(4)
+      anchors.rightMargin: Style.space(4)
       height: childrenRect.height
+    }
+
+    // Mute for the pet's own sounds only, right of the drag grip.
+    Text {
+      id: muteButton
+      anchors.verticalCenter: closeButton.verticalCenter
+      anchors.left: handle.right
+      anchors.leftMargin: Style.space(8)
+      // The same speaker glyphs the first-party audio panel uses.
+      text: root.muted ? "󰝟" : "󰕾"
+      color: Color.foreground
+      font.family: root.glyphFamily
+      font.pixelSize: Style.font.iconLarge
+      // Pinned, so a font without the glyph cannot resize the title bar.
+      width: Style.space(22)
+      horizontalAlignment: Text.AlignHCenter
+      opacity: root.muted ? (muteMouse.containsMouse ? 0.8 : 0.4)
+        : (muteMouse.containsMouse ? 1 : 0.6)
+
+      MouseArea {
+        id: muteMouse
+        anchors.fill: parent
+        anchors.margins: -Style.space(10)
+        // The pad stops at the middle of each gap, so it takes no click from
+        // the grip - declared later, so it wins overlaps - or from the name.
+        anchors.leftMargin: -Style.space(4)
+        anchors.rightMargin: -Style.space(2)
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.muteToggled()
+      }
     }
 
     // Drag grip, mirroring the close button. Hyprland moves only toplevel
@@ -220,6 +255,7 @@ PanelWindow {
         id: mover
         anchors.fill: parent
         anchors.margins: -Style.space(6)
+        anchors.rightMargin: -Style.space(4)
         hoverEnabled: true
         cursorShape: moving ? Qt.ClosedHandCursor : Qt.OpenHandCursor
         property bool moving: false
