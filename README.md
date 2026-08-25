@@ -49,6 +49,7 @@ omarchy plugin remove vdsabev.omagotchi
 ## File structure
 
 - `manifest.json` - plugin contract (kind: bar-widget)
+- `checkManifest.mjs` - CI guard requiring a version bump on every PR
 - `package.json` - test runner config
 - `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
@@ -56,6 +57,7 @@ omarchy plugin remove vdsabev.omagotchi
 - `GameStrip.qml` - game icon strip, install confirm
 - `Games.js` - game list, launch and install commands
 - `Games.test.mjs` - game list tests
+- `loadLib.mjs` - test helper that loads QML libraries into Node
 - `NicknameField.qml` - editable pet name
 - `PetState.js` - moods, flavor, nickname rules
 - `PetState.test.mjs` - mood tests

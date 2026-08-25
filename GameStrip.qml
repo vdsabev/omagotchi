@@ -27,11 +27,7 @@ Row {
   spacing: Style.space(4)
 
   function tooltipFor(game) {
-    if (root.busyId === game.id)
-      return "Fetching " + game.label + "…"
-    if (Games.isMissing(game, root.plugins))
-      return "Install " + game.label
-    return game.label
+    return Games.tooltipFor(game, root.plugins, root.busyId)
   }
 
   function launch(game) {
@@ -41,36 +37,28 @@ Row {
     root.launched()
   }
 
+  // The decision is Games.actionFor; this only wires its outcome up to
+  // processes, timers, and signals.
   function activate(game) {
-    if (root.busyId)
-      return
-    var confirmed = root.pendingId === game.id
-    root.pendingId = ""
-    if (Games.isMissing(game, root.plugins)) {
-      if (!game.install) {
-        root.notice(game.label + " is not installed.")
-        return
-      }
-      if (!confirmed) {
-        root.pendingId = game.id
-        root.notice("Install " + game.label + "? Click again.")
-        return
-      }
+    var a = Games.actionFor(game, root.plugins, { busy: !!root.busyId, confirmed: root.pendingId === game.id })
+    if (a.action !== "ignore")
+      root.pendingId = ""
+    if (a.notice)
+      root.notice(a.notice)
+    if (a.action === "confirm")
+      root.pendingId = game.id
+    else if (a.action === "install") {
       root.busyId = game.id
-      root.notice("Fetching " + game.label + "…")
       installer.game = game
       installer.command = Games.installCommand(game)
       installer.running = true
-      return
-    }
-    if (Games.isDisabled(game, root.plugins)) {
+    } else if (a.action === "enable") {
       root.busyId = game.id
       enabler.game = game
       enabler.command = Games.enableCommand(game)
       enabler.running = true
-      return
-    }
-    root.launch(game)
+    } else if (a.action === "launch")
+      root.launch(game)
   }
 
   onGamesChanged: root.pendingId = ""
