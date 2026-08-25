@@ -5,9 +5,9 @@ import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
 
-// Full-screen overlay panel. A MouseArea covers the screen and closes the
-// panel on outside clicks; a Region mask excludes the bar strip so bar
-// interactions still work.
+// Overlay panel that stays open until it is dismissed on purpose — the close
+// button, Escape, or the bar icon. The input mask covers only the card, so
+// clicks anywhere else go to the windows below instead of closing it.
 PanelWindow {
   id: root
 
@@ -22,8 +22,19 @@ PanelWindow {
   // The card decides whether a name is being typed; the widget reads it back to
   // keep Enter and Escape away from the close handlers.
   property bool editingName: false
+  // Dragged position, in screen coordinates. Negative means "not moved yet", so
+  // the card follows the bar icon until you drag it.
+  property real dragX: -1
+  property real dragY: -1
 
   default property alias contentItem: contentHolder.children
+  // Sits in the top bar, between the drag grip and the close button.
+  property alias titleItem: titleHolder.children
+
+  // The top bar overlays the card and anchors to its edge, ignoring the card
+  // padding, so the content clears whichever of the two reaches lower.
+  readonly property real titleBarHeight: closeButton.y + closeButton.height / 2
+    + Math.max(handle.height, titleHolder.height) / 2 + Style.space(8)
 
   signal closeRequested()
 
@@ -63,21 +74,26 @@ PanelWindow {
   readonly property real anchorW: anchorItem ? anchorItem.width : 0
   readonly property real anchorH: anchorItem ? anchorItem.height : 0
 
+  // Align the card with the icon's end of the bar, so an icon in a corner opens
+  // a card in that corner instead of one centered half off the screen.
+  function alignedStart(anchorStart, anchorLen, cardLen, screenLen) {
+    var center = anchorStart + anchorLen / 2
+    if (center < screenLen / 3)
+      return anchorStart
+    if (center > screenLen * 2 / 3)
+      return anchorStart + anchorLen - cardLen
+    return center - cardLen / 2
+  }
+
   readonly property point cardOrigin: {
     if (!anchorItem || !bar) return Qt.point(gap, gap)
     var x = 0, y = 0
-    if (barPos === "bottom") {
-      x = anchorPos.x + anchorW / 2 - contentWidth / 2
-      y = screenH - barH - contentHeight - gap
-    } else if (barPos === "top") {
-      x = anchorPos.x + anchorW / 2 - contentWidth / 2
-      y = barH + gap
-    } else if (barPos === "left") {
-      x = barW + gap
-      y = anchorPos.y + anchorH / 2 - contentHeight / 2
-    } else { // "right"
-      x = screenW - barW - contentWidth - gap
-      y = anchorPos.y + anchorH / 2 - contentHeight / 2
+    if (barVertical) {
+      x = barPos === "left" ? barW + gap : screenW - barW - contentWidth - gap
+      y = alignedStart(anchorPos.y, anchorH, contentHeight, screenH)
+    } else {
+      x = alignedStart(anchorPos.x, anchorW, contentWidth, screenW)
+      y = barPos === "top" ? barH + gap : screenH - barH - contentHeight - gap
     }
     x = Math.max(gap, Math.min(x, screenW - contentWidth - gap))
     y = Math.max(gap, Math.min(y, screenH - contentHeight - gap))
@@ -102,8 +118,7 @@ PanelWindow {
   }
 
   mask: Region {
-    width: root.screenW
-    height: root.screenH
+    item: card
   }
 
   onVisibleChanged: {
@@ -121,19 +136,12 @@ PanelWindow {
     b: anchorItem
   }
 
-  // Clicking anywhere outside the card closes the panel.
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.AllButtons
-    onClicked: root.closeRequested()
-  }
-
   BorderSurface {
     id: card
-    x: root.cardOrigin.x
-    y: root.cardOrigin.y
+    x: root.dragX >= 0 ? root.dragX : root.cardOrigin.x
+    y: root.dragY >= 0 ? root.dragY : root.cardOrigin.y
     width: root.contentWidth
-    height: root.contentHeight
+    height: root.contentHeight + Math.max(card.contentTopInset, root.titleBarHeight)
     color: Color.popups.background
     borderSpec: Border.surfaceSpec("popups", "border", Color.popups.border, Math.max(1, Style.space(2)))
     padding: root.padding
@@ -142,13 +150,14 @@ PanelWindow {
     Item {
       id: contentHolder
       anchors.fill: parent
-      anchors.topMargin: card.contentTopInset
+      anchors.topMargin: Math.max(card.contentTopInset, root.titleBarHeight)
       anchors.rightMargin: card.contentRightInset
       anchors.bottomMargin: card.contentBottomInset
       anchors.leftMargin: card.contentLeftInset
     }
 
     Text {
+      id: closeButton
       anchors.top: parent.top
       anchors.right: parent.right
       anchors.topMargin: Style.space(4)
@@ -166,6 +175,74 @@ PanelWindow {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.closeRequested()
+      }
+    }
+
+    Item {
+      id: titleHolder
+      anchors.verticalCenter: closeButton.verticalCenter
+      anchors.left: handle.right
+      anchors.right: closeButton.left
+      anchors.leftMargin: Style.space(6)
+      anchors.rightMargin: Style.space(6)
+      height: childrenRect.height
+    }
+
+    // Drag grip, mirroring the close button. Hyprland moves only toplevel
+    // windows, not layer-shell surfaces, so the panel moves itself.
+    Item {
+      id: handle
+      anchors.verticalCenter: closeButton.verticalCenter
+      anchors.left: parent.left
+      anchors.leftMargin: Style.space(4) + root.rounding * 0.5
+      width: Style.space(12)
+      height: width
+      opacity: mover.moving || mover.containsMouse ? 1 : 0.5
+
+      Grid {
+        anchors.centerIn: parent
+        columns: 3
+        spacing: Style.space(3)
+
+        Repeater {
+          model: 9
+
+          Rectangle {
+            width: Style.space(2)
+            height: width
+            radius: width / 2
+            color: Color.foreground
+          }
+        }
+      }
+
+      MouseArea {
+        id: mover
+        anchors.fill: parent
+        anchors.margins: -Style.space(6)
+        hoverEnabled: true
+        cursorShape: moving ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+        property bool moving: false
+        property real grabX: 0
+        property real grabY: 0
+
+        onPressed: function(mouse) {
+          moving = true
+          grabX = mouse.x + handle.x + mover.x
+          grabY = mouse.y + handle.y + mover.y
+        }
+
+        onPositionChanged: function(mouse) {
+          if (!moving)
+            return
+          var dx = mouse.x + handle.x + mover.x - grabX
+          var dy = mouse.y + handle.y + mover.y - grabY
+          root.dragX = Math.max(0, Math.min(card.x + dx, root.screenW - card.width))
+          root.dragY = Math.max(0, Math.min(card.y + dy, root.screenH - card.height))
+        }
+
+        onReleased: moving = false
+        onCanceled: moving = false
       }
     }
   }
