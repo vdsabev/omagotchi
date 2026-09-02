@@ -1,6 +1,7 @@
 import QtQuick
 
-// 16x16-style binocular head: a 10x5 pixel grid. Colors come from the Omarchy theme.
+// Binocular head: a 5-row pixel grid, rim + two 3x3 wells. Colors come from
+// the Omarchy theme.
 Item {
   id: root
 
@@ -14,12 +15,15 @@ Item {
   property color rimColor: "#ffe14d"
   property color wellColor: "#0b0b12"
   property color pupilColor: "#3dfff3"
+  // Cells between the two wells. One pixel makes a narrower head.
+  property int gap: 2
 
   implicitWidth: 40
   implicitHeight: 20
 
-  readonly property real pixel: Math.max(1, Math.floor(Math.min(width / 10, height / 5)))
-  readonly property real gridW: pixel * 10
+  readonly property int cols: 8 + gap
+  readonly property real pixel: Math.max(1, Math.floor(Math.min(width / cols, height / 5)))
+  readonly property real gridW: pixel * cols
   readonly property real gridH: pixel * 5
 
   // Pupil cell inside a 3x3 well. Sleepy lids cover the top row, so the pupil
@@ -60,12 +64,12 @@ Item {
     Rectangle {
       x: root.pixel
       y: root.pixel
-      width: root.pixel * 8
+      width: root.pixel * (root.cols - 2)
       height: root.pixel * 3
       color: root.bodyColor
     }
 
-    // Two 3x3 wells, one pixel apart from the rim and two from each other.
+    // Two 3x3 wells, one pixel in from the rim.
     Repeater {
       model: 18
 
@@ -75,7 +79,7 @@ Item {
         readonly property int cx: index % 3
         readonly property int cy: Math.floor((index % 9) / 3)
 
-        x: root.pixel * (1 + eye * 5 + cx)
+        x: root.pixel * (1 + eye * (3 + root.gap) + cx)
         y: root.pixel * (1 + cy)
         width: root.pixel
         height: root.pixel

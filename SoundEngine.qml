@@ -8,7 +8,7 @@ Item {
 
   property bool muted: false
 
-  function play(type, freq, dur, vol) {
+  function play(type, freq, dur, vol, fade) {
     if (root.muted)
       return
     var name = type || "beep"
@@ -17,6 +17,7 @@ Item {
     if (freq !== undefined) args.push(String(freq))
     if (dur !== undefined) args.push(String(dur))
     if (vol !== undefined) args.push(String(vol))
+    if (fade !== undefined) args.push(String(fade))
     Quickshell.execDetached(args)
   }
 }

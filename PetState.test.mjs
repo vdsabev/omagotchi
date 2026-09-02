@@ -3,8 +3,8 @@ import assert from "node:assert/strict"
 import { loadLib } from "./loadLib.mjs"
 
 const PetState = loadLib("./PetState.js", [
-  "moodFor", "icon", "flavor", "defaultState", "parseState", "normalizeNickname",
-  "DEFAULT_NICKNAME"
+  "moodFor", "flavor", "defaultState", "parseState", "normalizeNickname",
+  "roamNotice", "homeNotice", "DEFAULT_NICKNAME"
 ])
 
 const NOW = 1000000
@@ -37,13 +37,11 @@ test("curious lasts as long as CursorTracker holds the look", () => {
   assert.equal(mood({ lastGlance: NOW - 5000 }), "idle")
 })
 
-test("every mood has an icon and a line, named and plain", () => {
+test("every mood has a line, named and plain", () => {
   for (const id of ["idle", "curious", "sleepy", "happy", "night"]) {
-    assert.ok(PetState.icon(id))
     assert.ok(PetState.flavor(id, "Bolt", 1))
     assert.match(PetState.flavor(id, "Bolt", 0), /Bolt/)
   }
-  assert.equal(PetState.icon("nonsense"), PetState.icon("idle"))
   assert.equal(PetState.flavor("nonsense", "Bolt", 1), PetState.flavor("idle", "Bolt", 1))
 })
 
@@ -67,14 +65,22 @@ test("a fresh pet starts unmuted", () => {
 })
 
 test("a saved state round-trips, and a bad one falls back to the defaults", () => {
-  const saved = PetState.parseState('{"nickname":"  bo  bo ","lastClick":42,"muted":true}')
+  const saved = PetState.parseState('{"nickname":"  bo  bo ","lastClick":42,"muted":true,"roaming":true}')
   assert.equal(saved.nickname, "bo bo")
   assert.equal(saved.lastClick, 42)
   assert.equal(saved.muted, true)
+  assert.equal(saved.roaming, true)
 
   for (const raw of ["", "{", "null", "[]"])
     assert.deepEqual(PetState.parseState(raw).nickname, PetState.DEFAULT_NICKNAME)
 
-  // An older state file has no mute field, so the pet is heard until muted.
+  // An older state file has neither field, so the pet is heard and stays home.
   assert.equal(PetState.parseState('{"nickname":"bo"}').muted, false)
+  assert.equal(PetState.parseState('{"nickname":"bo"}').roaming, false)
+})
+
+test("the roam notices name the pet, default included", () => {
+  assert.match(PetState.roamNotice("Bolt"), /^Bolt /)
+  assert.match(PetState.homeNotice("Bolt"), /^Bolt /)
+  assert.match(PetState.roamNotice(""), new RegExp("^" + PetState.DEFAULT_NICKNAME + " "))
 })

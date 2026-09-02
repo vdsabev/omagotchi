@@ -8,9 +8,9 @@ const Games = loadLib("./Games.js", [
   "actionFor", "tooltipFor"
 ])
 
-test("the three builtins are always listed", () => {
+test("the builtins are always listed", () => {
   const ids = Games.allGames([]).map((g) => g.id)
-  assert.deepEqual(ids, ["jankeesvw.omasweeper", "nosignal.quattrolitaire", "terminal.tetris"])
+  assert.deepEqual(ids, Games.BUILTIN.map((g) => g.id))
 })
 
 test("extras keep their order after the builtins", () => {
@@ -18,7 +18,7 @@ test("extras keep their order after the builtins", () => {
     { id: "a", label: "A", kind: "tui", command: "a" },
     { id: "b", kind: "gui", command: "b --full" }
   ])
-  assert.deepEqual(games.slice(3).map((g) => [g.id, g.label]), [["a", "A"], ["b", "b"]])
+  assert.deepEqual(games.slice(Games.BUILTIN.length).map((g) => [g.id, g.label]), [["a", "A"], ["b", "b"]])
 })
 
 test("malformed extras and builtin id clashes are dropped", () => {
@@ -54,7 +54,7 @@ test("an installed plugin that is switched off is not missing", () => {
 })
 
 test("a tui or gui game is never missing or disabled", () => {
-  const game = Games.allGames([{ id: "a", kind: "tui", command: "a" }])[3]
+  const game = Games.allGames([{ id: "a", kind: "tui", command: "a" }])[Games.BUILTIN.length]
   assert.equal(Games.isMissing(game, {}), false)
   assert.equal(Games.isDisabled(game, {}), false)
 })
@@ -67,9 +67,9 @@ test("plugins launch through the shell", () => {
 })
 
 test("a tui game gets a terminal, a gui game does not", () => {
-  const tui = Games.launchCommand(Games.allGames([{ id: "a", kind: "tui", command: "nethack -x" }])[3])
+  const tui = Games.launchCommand(Games.allGames([{ id: "a", kind: "tui", command: "nethack -x" }])[Games.BUILTIN.length])
   assert.match(tui[2], /command -v nethack .*\$\{TERMINAL:-kitty\}" -e nethack -x/)
-  const gui = Games.launchCommand(Games.allGames([{ id: "b", kind: "gui", command: "supertux2" }])[3])
+  const gui = Games.launchCommand(Games.allGames([{ id: "b", kind: "gui", command: "supertux2" }])[Games.BUILTIN.length])
   assert.match(gui[2], /uwsm-app -- supertux2$/)
   assert.doesNotMatch(gui[2], /TERMINAL/)
 })

@@ -28,51 +28,52 @@ omarchy plugin remove vdsabev.omagotchi
 ## Dependencies
 
 - Omarchy Quattro (`omarchy-shell` / Quickshell)
-- Hyprland socket - `cursorpos` is used to track the cursor for pupil direction
-- UPower - charger sounds; without a battery the plugin stays silent on this point
+- Hyprland socket - `cursorpos` is used to track the cursor for eye pupil direction
+- UPower - charger plug/unplug sounds, if you have a battery
 - `$TERMINAL` - required to launch TUI games (e.g. Omasweeper, Quattrolitaire)
 
 ## Features
 
-- Omagotchi lives in the status bar and follows your moving mouse cursor.
-- Left click to open a popup with the full robot, a mood line, and the game strip.
-- Click the name to rename your bot.
-- Shortcuts to games: Omasweeper, Quattrolitaire, and Tetris. Custom games go in `~/.config/omagotchi/games.json` - an array of `{ id, label, icon, kind: plugin|tui|gui, command, install }`, where `tui` gets `$TERMINAL -e`. Games not yet installed are offered via a one-time `omarchy plugin add` confirmation in a popup.
-- Moods:
-	- `idle`
-	- `curious` (eyes following the pointer)
-	- `sleepy` (idle)
-	- `night` (22:00–07:00)
-	- `happy` (you clicked)
-- Sound effects: beep on popup open, whir on blink, a rising chirp when the charger goes in and a falling tone when it comes out. The speaker button in the popup mutes them - it silences only Omagotchi, not the system, and reaches every bar.
-- State: `~/.config/omagotchi/state.json` (nickname, last click, mute).
+- Omagotchi lives in the status bar and watches your moving mouse cursor
+- Left click to open the popup
+- Click the name to rename your Omagotchi
+- Send your Omagotchi out to patrol your screen
+- Shortcuts to games: Omasweeper, Quattrolitaire, Tetris, and Sudoku. You can add custom games in `~/.config/omagotchi/games.json`
+- Moods and sound effects - mute in the popup
+- Current state stored in: `~/.config/omagotchi/state.json`
 
 ## File structure
 
-- `manifest.json` - plugin contract (kind: bar-widget)
-- `checkManifest.mjs` - CI guard requiring a version bump on every PR
-- `package.json` - test runner config
+- `BarBot.qml` - the bar icon: that head on a stubby body
 - `BarWidget.qml` - bar eyes + popup (one Panel-rooted entry point)
+- `bin`
+	- `beep.sh` - beep sound script
+	- `charge.sh` - charger plug-in chirp
+	- `land.sh` - thud when it comes down
+	- `launch.sh` - whoosh when the robot is slung into the air
+	- `play.sh` - shared playback for the sound scripts
+	- `roll.sh` - motor whirr on the way out and back
+	- `unplug.sh` - charger unplug tone
+	- `whir.sh` - whir sound script
+- `checkManifest.mjs` - CI guard requiring a version bump on every PR
 - `CursorTracker.qml` - Hyprland socket `cursorpos` → look direction
-- `PowerWatcher.qml` - UPower `onBattery` → charger plug and unplug sounds
 - `Eyes.qml` - shared binocular head
-- `GameStrip.qml` - game icon strip, install confirm
 - `Games.js` - game list, launch and install commands
 - `Games.test.mjs` - game list tests
+- `GameStrip.qml` - game icon strip, install confirm
 - `loadLib.mjs` - test helper that loads QML libraries into Node
+- `manifest.json` - plugin contract (kind: bar-widget)
 - `NicknameField.qml` - editable pet name
+- `package.json` - test runner config
+- `PetPanel.qml` - popup card centered on the bar icon
 - `PetState.js` - moods, flavor, nickname and state-file rules
 - `PetState.test.mjs` - mood tests
-- `PetPanel.qml` - persistent popup window
+- `PowerWatcher.qml` - UPower `onBattery` → charger plug and unplug sounds
+- `RoamWindow.qml` - the strip at the foot of the screen the robot paces on
 - `Robot.qml` - full body
 - `SoundEngine.qml` - sound effect playback
-- `bin/beep.sh` - beep sound script
-- `bin/whir.sh` - whir sound script
-- `bin/charge.sh` - charger plug-in chirp
-- `bin/unplug.sh` - charger unplug tone
-- `bin/play.sh` - shared playback for the sound scripts
 
-Tests run with `npm test`.
+Run tests with `npm test`.
 
 ## License
 

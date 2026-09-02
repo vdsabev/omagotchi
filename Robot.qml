@@ -41,6 +41,21 @@ Item {
     "AAAAAAA..AAAAAAA"
   ]
 
+  // Tank tracks: the tread pixels in the foot rows scroll while the robot
+  // drives, so a straight-line walk reads as rolling.
+  property int treadPhase: 0
+  readonly property int treadRow: 14
+
+  function paintCell(row, col) {
+    var code = sprite[row].charAt(col)
+    if (row === treadRow && (code === "D" || code === "Y")) {
+      // Each track starts one pixel in from its own left edge.
+      var index = col - (col < 8 ? 1 : 10)
+      return (index + treadPhase) % 2 === 0 ? dark : yellow
+    }
+    return paint(code)
+  }
+
   function paint(code) {
     switch (code) {
     case "Y": return yellow
@@ -69,7 +84,7 @@ Item {
         y: root.px * row
         width: root.px
         height: root.px
-        color: root.paint(root.sprite[row].charAt(col))
+        color: root.paintCell(row, col)
       }
     }
 

@@ -1,6 +1,6 @@
 .pragma library
 
-// The three always-listed games, and the shape every extra game must match:
+// The always-listed games, and the shape every extra game must match:
 // `id`, `label`, `kind`, `command` (tui/gui) or `install` (plugin, a git URL),
 // and an optional `icon`, since the strip shows icons and keeps the label for
 // the tooltip.
@@ -25,6 +25,13 @@ var BUILTIN = [
     icon: "\u{1F9F1}",
     kind: "plugin",
     install: "https://github.com/Ycaro-Oleg/omarchy-my-tetris.git"
+  },
+  {
+    id: "l3aro.sudoku",
+    label: "Sudoku",
+    icon: "\u{1F522}",
+    kind: "plugin",
+    install: "https://github.com/l3aro/omarchy-sudoku.git"
   }
 ]
 

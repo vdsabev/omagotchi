@@ -22,6 +22,10 @@ Panel {
   property string nickname: PetState.DEFAULT_NICKNAME
   property string hatchedIso: new Date().toISOString()
   property bool soundMuted: false
+  // Out for a walk beside the bar. Per-widget, so the robot roams on the
+  // screen whose popup sent it out.
+  property bool roaming: false
+  property bool restored: false
   readonly property bool editingName: panel.editingName
   // Re-drawn per mood change, so the flavor line does not flicker between the
   // plain and the named variant while the mood holds.
@@ -33,6 +37,7 @@ Panel {
 
   readonly property var games: Games.allGames(root.extraGames)
 
+  readonly property string barPosition: bar ? bar.position : "top"
   readonly property bool verticalBar: bar ? bar.vertical : false
   readonly property color themeFg: bar ? bar.foreground : Color.foreground
   readonly property color themeBg: bar ? bar.background : Qt.rgba(0.05, 0.05, 0.07, 1)
@@ -68,6 +73,7 @@ Panel {
       hatched: root.hatchedIso,
       lastClick: root.lastClickMs,
       muted: root.soundMuted,
+      roaming: root.roaming,
       nickname: root.nickname
     }, null, 2))
   }
@@ -139,6 +145,12 @@ Panel {
       root.nickname = s.nickname
       root.lastClickMs = s.lastClick
       root.soundMuted = s.muted
+      // Patrol is per-widget once the shell is up, so only the first read of
+      // the file restores it; a sibling bar's write must not send this one out.
+      if (!root.restored) {
+        root.restored = true
+        root.roaming = s.roaming
+      }
     }
   }
 
@@ -183,7 +195,7 @@ Panel {
     tooltipText: root.flavorText
 
     iconComponent: Component {
-      Eyes {
+      BarBot {
         anchors.fill: parent
         lookX: tracker.lookX
         lookY: tracker.lookY
@@ -191,9 +203,9 @@ Panel {
         alert: tracker.tracking
         sleepy: root.mood === "sleepy" || root.mood === "night"
         rimColor: root.themeFg
-        pupilColor: root.themeAccent
-        wellColor: root.themeBg
-        bodyColor: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
+        accent: root.themeAccent
+        dark: root.themeBg
+        chassis: Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.12)
       }
     }
 
@@ -206,6 +218,41 @@ Panel {
       root.persistClick()
       root.toggle()
     }
+  }
+
+  function toggleRoam() {
+    root.roaming = !root.roaming
+    root.persistState()
+    soundEngine.play("roll")
+    root.say(root.roaming ? PetState.roamNotice(root.nickname) : PetState.homeNotice(root.nickname))
+  }
+
+  readonly property var hostWindow: root.QsWindow ? root.QsWindow.window : null
+
+  RoamWindow {
+    visible: root.roaming
+    screen: root.hostWindow ? root.hostWindow.screen : null
+    barPos: root.barPosition
+    barThickness: root.hostWindow
+      ? (root.verticalBar ? root.hostWindow.width : root.hostWindow.height) : 0
+    themeFg: root.themeFg
+    themeBg: root.themeBg
+    themeAccent: root.themeAccent
+    lookX: tracker.lookX
+    lookY: tracker.lookY
+    blink: root.blink
+    alert: tracker.tracking
+    sleepy: (root.mood === "sleepy" || root.mood === "night") && !tracker.tracking
+    mood: root.mood
+    onPoked: {
+      soundEngine.play("whir")
+      root.blink = true
+      blinkOff.restart()
+    }
+    onLaunched: soundEngine.play("launch")
+    onLanded: soundEngine.play("land")
+    // Lighter and higher than the landing, so a wall reads as a glancing knock.
+    onBumped: soundEngine.play("land", 140, 140, 0.22)
   }
 
   SoundEngine {
@@ -224,14 +271,11 @@ Panel {
     anchorItem: hit
     bar: root.bar
     open: root.opened
-    muted: root.soundMuted
-    glyphFamily: root.contentFontFamily
     editingName: nameField.editing
     focusTarget: keyCatcher
-    contentWidth: Style.space(280)
+    contentWidth: Style.space(364)
     contentHeight: stage.implicitHeight + Style.space(20)
     onCloseRequested: root.close()
-    onMuteToggled: root.toggleMute()
 
     titleItem: NicknameField {
       id: nameField
@@ -271,16 +315,6 @@ Panel {
         spacing: Style.space(10)
         width: parent.width - Style.space(16)
 
-        Text {
-          width: parent.width
-          horizontalAlignment: Text.AlignHCenter
-          text: PetState.icon(root.mood) + " " + root.mood.toUpperCase()
-          color: Qt.darker(root.themeFg, 1.6)
-          font.family: root.contentFontFamily
-          font.pixelSize: Style.font.caption
-          font.letterSpacing: 2
-        }
-
         Robot {
           width: parent.width
           height: 180
@@ -296,15 +330,48 @@ Panel {
           dark: root.themeBg
         }
 
-        GameStrip {
+        Row {
           anchors.horizontalCenter: parent.horizontalCenter
-          games: root.games
-          plugins: root.pluginState
-          foreground: root.themeFg
-          fontFamily: root.contentFontFamily
-          onNotice: function(text) { root.say(text) }
-          onLaunched: root.close()
-          onRefreshRequested: pluginList.running = true
+          spacing: Style.space(12)
+
+          // Mute for the pet's own sounds only. The speaker glyphs sit outside
+          // Unicode, so they need the bar's Nerd Font.
+          Button {
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: root.soundMuted ? "󰝟" : "󰕾"
+            iconSize: Style.font.body
+            focusable: true
+            foreground: root.themeFg
+            fontFamily: root.contentFontFamily
+            opacity: root.soundMuted ? 0.5 : 1
+            tooltipText: root.soundMuted ? "Unmute " + root.nickname : "Mute " + root.nickname
+            onClicked: root.toggleMute()
+          }
+
+          GameStrip {
+            anchors.verticalCenter: parent.verticalCenter
+            games: root.games
+            plugins: root.pluginState
+            foreground: root.themeFg
+            fontFamily: root.contentFontFamily
+            onNotice: function(text) { root.say(text) }
+            onLaunched: root.close()
+            onRefreshRequested: pluginList.running = true
+          }
+
+          Button {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.roaming ? "Recall" : "Patrol"
+            focusable: true
+            bordered: true
+            foreground: root.themeFg
+            fontFamily: root.contentFontFamily
+            fontSize: Style.font.bodySmall
+            tooltipText: root.roaming
+              ? "Recall " + root.nickname + " to the bar"
+              : "Send " + root.nickname + " on patrol along the bar"
+            onClicked: root.toggleRoam()
+          }
         }
 
         Text {

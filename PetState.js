@@ -4,11 +4,11 @@ var DEFAULT_NICKNAME = "Omagotchi"
 var MAX_NICKNAME = 24
 
 var moods = {
-  idle: { line: "Watching you work…", named: "{name} is watching you work", icon: "\u{1F916}" },
-  curious: { line: "Something moved - curious…", named: "Something moved - {name} noticed", icon: "\u{1F440}" },
-  sleepy: { line: "Idle circuits cooling down…", named: "{name} is cooling down", icon: "\u{1F634}" },
-  happy: { line: "You clicked - that was nice ☺️", named: "{name} enjoyed that click", icon: "\u{1F60A}" },
-  night: { line: "Night shift - I'll keep watch!", named: "{name} has the night shift", icon: "\u{1F319}" }
+  idle: { line: "Watching you work…", named: "{name} is watching you work" },
+  curious: { line: "Something moved - curious…", named: "Something moved - {name} noticed" },
+  sleepy: { line: "Idle circuits cooling down…", named: "{name} is cooling down" },
+  happy: { line: "You clicked - that was nice ☺️", named: "{name} enjoyed that click" },
+  night: { line: "Night shift - I'll keep watch!", named: "{name} has the night shift" }
 }
 
 function moodFor(nowMs, lastMoveMs, lastClickMs, hour, lastGlanceMs) {
@@ -27,10 +27,6 @@ function moodFor(nowMs, lastMoveMs, lastClickMs, hour, lastGlanceMs) {
   return "idle"
 }
 
-function icon(moodId) {
-  return moods[moodId] ? moods[moodId].icon : moods.idle.icon
-}
-
 // `roll` is a 0..1 draw from the caller, so the name only turns up now and then
 // and the tests can pick the outcome.
 function flavor(moodId, nickname, roll) {
@@ -38,6 +34,14 @@ function flavor(moodId, nickname, roll) {
   if (nickname && roll < 0.3)
     return m.named.replace("{name}", nickname)
   return m.line
+}
+
+function roamNotice(nickname) {
+  return (nickname || DEFAULT_NICKNAME) + " is on patrol."
+}
+
+function homeNotice(nickname) {
+  return (nickname || DEFAULT_NICKNAME) + " is recalled to the bar."
 }
 
 function normalizeNickname(name) {
@@ -50,6 +54,7 @@ function defaultState() {
     hatched: new Date().toISOString(),
     lastClick: 0,
     muted: false,
+    roaming: false,
     nickname: DEFAULT_NICKNAME
   }
 }
@@ -70,5 +75,6 @@ function parseState(raw) {
   if (s.nickname) state.nickname = normalizeNickname(s.nickname)
   if (s.lastClick) state.lastClick = Number(s.lastClick) || 0
   state.muted = !!s.muted
+  state.roaming = !!s.roaming
   return state
 }
